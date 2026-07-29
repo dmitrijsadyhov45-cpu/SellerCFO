@@ -7,6 +7,7 @@ import {
   Bell, Settings, Loader2, ChevronDown, Package,
   TrendingUp, TrendingDown, Minus, ChevronLeft, Calendar, SlidersHorizontal, ArrowLeftRight
 } from 'lucide-react';
+import { getDashboardMetrics } from './api/client';
 
 // --- Утилиты ---
 const cn = (...classes: any[]) => classes.filter(Boolean).join(' ');
@@ -193,6 +194,18 @@ const basicMetrics = [
 // --- ВКЛАДКА: ОБЗОР И СРАВНЕНИЕ ---
 const OverviewTab = () => {
   const [period, setPeriod] = useState('30d');
+  const [metrics, setMetrics] = useState<any>(null);
+
+  useEffect(() => {
+    getDashboardMetrics().then(data => setMetrics(data.metrics)).catch(console.error);
+  }, []);
+
+  const displayMetrics = metrics ? [
+    { title: "Выручка", value: formatCurrency(metrics.revenue.curr), trend: formatPct((metrics.revenue.curr - metrics.revenue.prev) / metrics.revenue.prev * 100), isPositive: metrics.revenue.curr >= metrics.revenue.prev, icon: RussianRuble },
+    { title: "Чистая прибыль", value: formatCurrency(metrics.profit.curr), trend: formatPct((metrics.profit.curr - metrics.profit.prev) / Math.abs(metrics.profit.prev) * 100), isPositive: metrics.profit.curr >= metrics.profit.prev, icon: Activity },
+    { title: "Текущая маржа", value: metrics.margin.curr.toFixed(1) + "%", trend: formatPP(metrics.margin.curr - metrics.margin.prev), isPositive: metrics.margin.curr >= metrics.margin.prev, icon: Percent },
+    { title: "Заказов", value: "1 240", trend: "+5.1%", isPositive: true, icon: ShoppingCart }, // mocked
+  ] : basicMetrics;
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-300">
@@ -205,7 +218,7 @@ const OverviewTab = () => {
 
       {/* Metrics Grid */}
       <div className="grid grid-cols-2 gap-3 md:gap-4">
-        {basicMetrics.map((m, i) => (
+        {displayMetrics.map((m, i) => (
           <div key={i} className="bg-zinc-900 border border-zinc-800 p-4 rounded-2xl relative overflow-hidden group">
             <div className="absolute -right-4 -top-4 opacity-5 group-hover:opacity-10 transition-opacity"><m.icon className="w-24 h-24 text-lime-400" /></div>
             <p className="text-zinc-400 text-xs md:text-sm mb-1">{m.title}</p>
